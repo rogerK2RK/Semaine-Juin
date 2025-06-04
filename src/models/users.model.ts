@@ -1,33 +1,74 @@
-import logger from '../utils/logger';
+import { db } from "../config/pool";
+import logger from "../utils/logger";
 
-// Simulation d’une base de données
-const fakeUserDB = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-];
+import { comments, posts, users } from "../schemas";
+import { NewUser } from "../entities/User";
+import { postModel } from "./posts.model";
+import { eq } from "drizzle-orm";
 
-export const findAllUsers = async () => {
-  logger.info('Modèle: Recherche de tous les utilisateurs');
-  try {
-    // Simuler un accès base de données
-    return fakeUserDB;
-  } catch (error: any) {
-    logger.error(`Modèle: Erreur lors de la récupération des utilisateurs: ${error.message}`);
-    throw error;
-  }
-};
-
-export const findUserById = async (id: number) => {
-  logger.info(`Modèle: Recherche de l’utilisateur avec l’ID ${id}`);
-  try {
-    const user = fakeUserDB.find((u) => u.id === id);
-    if (!user) {
-      logger.warn(`Modèle: Utilisateur avec l’ID ${id} non trouvé`);
-      return null;
+export const userModel = {
+    getAll: () => {
+        try {
+            return db.select({
+                id: users.id,
+                username: users.username
+            }).from(users);
+        } catch (err: any) {
+            logger.error(`Erreur lors de la récupération des utilisateurs; ${err.message}`);
+            throw new Error("Impossible de récupérer les utilisateurs")
+        }
+    },
+    get: (id: string) => {
+        try {
+            return db.select({
+                id: users.id,
+                username: users.username,
+                comments: {
+                    id: comments.id,
+                    content: comments.content
+                },
+                posts: {
+                    id: posts.id,
+                    title: posts.title
+                }
+            }).from(users)
+            .where(
+                eq(users.id, id)
+            )
+        } catch (err: any) {
+            logger.error(`Erreur lors de la récupération de l'utilisateur; ${err.message}`);
+            throw new Error("Impossible de récupérer l'utilisateur")
+        }
+    },
+    findByCredentials: (email: string) => {
+        try {
+            return db.select({
+                id: users.id,
+                password: users.password,
+                username: users.username,
+                email: users.email
+            }).from(users)
+            .where(
+                eq(users.email, email)
+            )
+        } catch (err: any) {
+            logger.error(`Erreur lors de la récupération de l'utilisateur; ${err.message}`);
+            throw new Error("Impossible de récupérer l'utilisateur")
+        }
+    },
+    create: (user: NewUser) => {
+        try {
+            return db.insert(users).values(user).returning({ id: users.id });
+        } catch (err: any) {
+            logger.error(`Erreur lors de la création de l'utilisateur; ${err.message}`);
+            throw new Error("Impossible de créer l'utilisateur")
+        }
     }
-    return user;
-  } catch (error: any) {
-    logger.error(`Modèle: Erreur lors de la recherche de l’utilisateur: ${error.message}`);
-    throw error;
-  }
-};
+}
+
+/*
+    - getAll()
+    - get(id: string)
+    - findByCredentials(email: string)
+    - create(user: NewUser)
+*/

@@ -1,6 +1,7 @@
 // On  importe le module express qui sera utilisé pour faire tourner notre serveur Noder
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { requestLogger } from "./middlewares/requestLogger";
 import router from "./routes";
 import { env } from "./config/env";
@@ -14,7 +15,9 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // Méthodes HTTPS autorisées (les autres seront bloquées)
     credentials: true
 }));
+app.use(cookieParser()); // traiter correctement avec les cookies
 app.use(express.json()); // pour analyser les requêtes JSON
+app.use(express.urlencoded({ extended: true }))
 app.use(requestLogger);
 
 // Notre router global, situé dans src/routes/index.ts
@@ -34,7 +37,7 @@ const middleWare1 = (request: Request, response: Response, next: NextFunction) =
 const middleWare2 = (request: Request, response: Response, next: NextFunction) => {
     console.log('ON PASSE PAS')
     response.status(401).send("Interdit")
-} 
+}
 
 // Définition des routes :
 app.get("/", middleWare1, middleWare2, controller)
